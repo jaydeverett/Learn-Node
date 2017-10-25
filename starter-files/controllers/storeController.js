@@ -13,7 +13,7 @@ const multerOptions = {
     if(isPhoto) {
       next(null, true);
     } else {
-      next ({ message: 'That file type isn\'t allowed.' }, false);
+      next({ message: 'That file type isn\'t allowed.' }, false);
     }
   }
 };
@@ -52,9 +52,27 @@ exports.createStore = async (req, res) => {
 };
 
 exports.getStores = async (req, res) => {
+  //refactor for pagination
+  const page = req.params.page || 1;
+  const limit = 6;
+  const skip = (page * limit) - limit;
   //Query DB for list of all stores
-  const stores = await Store.find();
-  res.render('stores', { title: 'Stores', stores });
+  const storesPromise = Store
+    .find()
+    .skip(skip)
+    .limit(limit)
+    .sort({ created: 'desc' });
+
+  const countPromise = Store.count();
+  const [stores, count] = await Promise.all([storesPromise, countPromise]);
+  const pages = Math.ceil(count / limit);
+  if (!stores.length && skip) {
+    req.flash('info', `Page ${page} doesn't exist. Redirected to page ${pages}.`);
+    res.redirect(`/stores/page/${pages}`);
+    return;
+  }
+
+  res.render('stores', { title: 'Stores', stores, page, pages, count });
 };
 
 const confirmOwner = (store, user) => {
@@ -106,7 +124,7 @@ exports.searchStores = async (req, res) => {
   //first find stores that match
   .find({
     $text: {
-      $search: req.query.q,
+      $search: req.query.q
     }
   }, {
     score: { $meta: 'textScore' }
@@ -139,7 +157,7 @@ exports.mapStores = async (req, res) => {
 };
 
 exports.mapPage = (req, res) => {
-  res.render('map', { title: 'Map' })
+  res.render('map', { title: 'Map' });
 };
 
 exports.heartStore = async (req, res) => {
@@ -147,11 +165,11 @@ exports.heartStore = async (req, res) => {
   const operator = hearts.includes(req.params.id) ? '$pull' : '$addToSet';
   const user = await User
   .findByIdAndUpdate(req.user._id,
-    { [operator]: { hearts: req.params.id }},
+    { [operator]: { hearts: req.params.id } },
     { new: true }
   );
   res.json(user);
-}
+};
 
 exports.getHearts = async (req, res) => {
   const stores = await Store.find({

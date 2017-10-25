@@ -8,6 +8,7 @@ const { catchErrors } = require('../handlers/errorHandlers');
 
 router.get('/', catchErrors(storeController.getStores));
 router.get('/stores', catchErrors(storeController.getStores));
+router.get('/stores/page/:page', catchErrors(storeController.getStores));
 router.get('/add', authController.isLoggedIn, storeController.addStore);
 
 router.post('/add',
@@ -33,12 +34,12 @@ router.get('/login', userController.loginForm);
 router.post('/login', authController.login);
 router.get('/register', userController.registerForm);
 
-//1. validate registration data
-//2. Register the user
-//3. Log them in
 router.post('/register',
+  //1. validate registration data
   userController.validateRegister,
+  //2. Register the user
   userController.register,
+  //3. Log them in
   authController.login
 );
 
@@ -56,6 +57,8 @@ router.get('/map', storeController.mapPage);
 router.get('/hearts', authController.isLoggedIn, catchErrors(storeController.getHearts));
 router.post('/reviews/:id', authController.isLoggedIn, catchErrors(reviewController.addReview));
 router.get('/top', catchErrors(storeController.getTopStores));
+
+//API
 
 router.get('/api/search', catchErrors(storeController.searchStores));
 router.get('/api/stores/near', catchErrors(storeController.mapStores));
